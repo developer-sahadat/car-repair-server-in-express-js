@@ -39,7 +39,7 @@ async function run() {
     const servicesCollection = client.db("carRepaire").collection("services");
     const orderCollection = client.db("carRepaire").collection("order");
 
-    // auth
+    // auth api
     app.post("/login", (req, res) => {
       const user = req.body;
       const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_KEY, {
@@ -107,9 +107,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (reg, res) => {
-  res.send("hello mongodb");
+  res.send("successfully");
 });
 
 app.listen(port, () => {
-  console.log(port);
+  console.log("successfully post", port);
 });
