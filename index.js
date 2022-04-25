@@ -1,4 +1,5 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
@@ -17,10 +18,36 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+function verifyJwt(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "your authorization filed" });
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ message: "please valid token provide" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
+
 async function run() {
   try {
     await client.connect();
     const servicesCollection = client.db("carRepaire").collection("services");
+    const orderCollection = client.db("carRepaire").collection("order");
+
+    // auth
+    app.post("/login", (req, res) => {
+      const user = req.body;
+      const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_KEY, {
+        expiresIn: "1d",
+      });
+      res.send({ accessToken });
+    });
+
     // all services product find
     app.get("/services", async (req, res) => {
       const query = {};
@@ -51,6 +78,27 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await servicesCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // order details api
+    app.post("/order", async (req, res) => {
+      const order = req.body;
+      const result = await orderCollection.insertOne(order);
+      res.send(result);
+    });
+
+    app.get("/order", verifyJwt, async (req, res) => {
+      const decodedEmail = req.decoded.email;
+      const email = req.query;
+
+      if (email?.email === decodedEmail) {
+        const query = { email: email.email };
+        const cursor = orderCollection.find(query);
+        const order = await cursor.toArray();
+        res.send(order);
+      } else {
+        res.status.send({ message: "not valid token" });
+      }
     });
   } finally {
   }
