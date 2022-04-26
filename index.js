@@ -111,5 +111,5 @@ app.get("/", (reg, res) => {
 });
 
 app.listen(port, () => {
-  console.log("successfully post", port);
+  console.log(port);
 });
